@@ -19,7 +19,7 @@ namespace HotelListingAPI.Migrations
                 {
                     { 1, "Jamaica", "JM" },
                     { 2, "Guatemala", "GT" },
-                    { 3, "Panama", "PTY" }
+                    { 3, "Panama", "PTY" } 
                 });
 
             migrationBuilder.InsertData(
