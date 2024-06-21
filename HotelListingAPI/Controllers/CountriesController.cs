@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelListingAPI.Data;
 using HotelListingAPI.Models.Country;
+using HotelListingAPI.Contracts;
 
 namespace HotelListingAPI.Controllers
 {
@@ -15,20 +16,20 @@ namespace HotelListingAPI.Controllers
     [ApiController]
     public class CountriesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICountriesRepository _countriesRepository;
 
-        public CountriesController(ApplicationDbContext context, IMapper mapper)
+        public CountriesController(ApplicationDbContext context, IMapper mapper, ICountriesRepository countriesRepository)
         {
-            _context = context;
             _mapper = mapper;
+            _countriesRepository = countriesRepository;
         }
 
         // GET: api/Countries
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GetCountryDto>>> GetCountry()
         {
-            var countries = await _context.Countries.ToListAsync();
+            var countries = await _countriesRepository.GetAllAsync();
             var countryList = _mapper.Map<List<GetCountryDto>>(countries);
             return Ok(countryList);
         }
@@ -37,7 +38,7 @@ namespace HotelListingAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<CountryDto>> GetCountry(int id)
         {
-            var country = await _context.Countries.Include(hotel => hotel.Hotels).FirstOrDefaultAsync(country=> country.Id == id);
+            var country = await _countriesRepository.GetAsync(id);
             
             if (country == null)
             {
@@ -59,8 +60,7 @@ namespace HotelListingAPI.Controllers
                 return BadRequest("Invalid Record ID");
             }
 
-            // _context.Entry(country).State = EntityState.Modified;
-            var country = await _context.Countries.FindAsync(id);
+            var country = await _countriesRepository.GetDetails(id);
 
             if (country == null)
             {
@@ -71,12 +71,12 @@ namespace HotelListingAPI.Controllers
             
             try
             {
-                await _context.SaveChangesAsync();
+                await _countriesRepository.UpdateAsync(country);
                 return Accepted();
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!CountryExists(id))
+                if (!await CountryExists(id))
                 {
                     return NotFound();
                 }
@@ -86,7 +86,6 @@ namespace HotelListingAPI.Controllers
                 }
             }
 
-            return NoContent();
         }
 
         // POST: api/Countries
@@ -95,8 +94,7 @@ namespace HotelListingAPI.Controllers
         public async Task<ActionResult<CreateCountryDto>> PostCountry(CreateCountryDto countryDto)
         {
             var country = _mapper.Map<Country>(countryDto);
-            _context.Countries.Add(country);
-            await _context.SaveChangesAsync();
+            await _countriesRepository.AddAsync(country);
 
             return CreatedAtAction("GetCountry", new { id = country.Id }, country);
         }
@@ -105,21 +103,20 @@ namespace HotelListingAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCountry(int id)
         {
-            var country = await _context.Countries.FindAsync(id);
+            var country = await _countriesRepository.GetAsync(id);
             if (country == null)
             {
                 return NotFound();
             }
 
-            _context.Countries.Remove(country);
-            await _context.SaveChangesAsync();
+            await _countriesRepository.DeleteAsync(id);
 
             return NoContent();
         }
 
-        private bool CountryExists(int id)
+        private async Task<bool> CountryExists(int id)
         {
-            return _context.Countries.Any(e => e.Id == id);
+            return await _countriesRepository.Exists(id);
         }
     }
 }

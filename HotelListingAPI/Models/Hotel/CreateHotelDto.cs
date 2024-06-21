@@ -1,6 +1,6 @@
 namespace HotelListingAPI.Models.Hotel;
 
-public class CreateHotelDto
+public class CreateHotelDto : BaseHotelDto
 {
     
 }

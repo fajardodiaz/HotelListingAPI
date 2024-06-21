@@ -3,6 +3,8 @@ using HotelListingAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Microsoft.Extensions.DependencyInjection;
+using HotelListingAPI.Contracts;
+using HotelListingAPI.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +31,11 @@ builder.Services.AddCors(options =>
 
 // Serilog Configuration
 builder.Host.UseSerilog((ctx, lc)=>lc.WriteTo.Console().ReadFrom.Configuration(ctx.Configuration));
+
+// Generic Repository
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<ICountriesRepository, CountriesRepository>();
+builder.Services.AddScoped<IHotelsRepository, HotelsRepository>();
 
 var app = builder.Build();
 
